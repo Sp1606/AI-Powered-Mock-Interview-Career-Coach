@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IntervAI - AI Mock Interview & Career Coach</title>
+  <meta name="description" content="Simulate real-time technical and behavioral mock interviews with AI. Practice coding in Dart, Python, or JavaScript, get parsed resume questions, and view recruiter-grade scorecards.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <span class="brand-logo-text">IntervAI</span>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li class="menu-item active" id="nav-dashboard">
+          <button onclick="app.switchScreen('dashboard')">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+              <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+              <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+        </li>
+        <li class="menu-item" id="nav-resume">
+          <button onclick="app.switchScreen('resume')">
+            <svg viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Resume Scan</span>
+          </button>
+        </li>
+        <li class="menu-item" id="nav-settings">
+          <button onclick="app.switchScreen('settings')">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>API Settings</span>
+          </button>
+        </li>
+      </ul>
+      
+      <!-- User profile drawer -->
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar">SP</div>
+          <div class="user-details">
+            <span class="user-name">S.P. Kolasani</span>
+            <span class="user-status" id="api-status-text">Demo Mode</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top header bar -->
+      <header class="content-header">
+        <div class="header-title-section">
+          <h1 id="page-title">Interview Dashboard</h1>
+          <p id="page-subtitle">Configure your mock session and start training</p>
+        </div>
+        <div class="api-status-pill" onclick="app.switchScreen('settings')">
+          <span class="status-indicator" id="header-status-indicator"></span>
+          <span id="header-status-text">Offline Simulator</span>
+        </div>
+      </header>
+
+      <!-- ==========================================
+           Screen 1: Dashboard (Role Configuration)
+           ========================================== -->
+      <section id="screen-dashboard" class="screen-section active">
+        <div class="dashboard-grid">
+          <!-- Setup Panel -->
+          <div class="glass-card">
+            <form class="setup-form" onsubmit="event.preventDefault();">
+              <div class="form-group">
+                <label>Select Target Role</label>
+                <p class="desc">We'll tailor your coding challenges and architecture questions to this branch.</p>
+                <div class="role-cards-grid">
+                  <div class="role-select-card selected" onclick="app.selectRole('flutter', this)">
+                    <div class="role-icon">📱</div>
+                    <div class="role-info">
+                      <h3>Flutter Developer</h3>
+                      <p>Dart, Mobile Architecture, UI, State Management</p>
+                    </div>
+                  </div>
+                  <div class="role-select-card" onclick="app.selectRole('python-ml', this)">
+                    <div class="role-icon">🐍</div>
+                    <div class="role-info">
+                      <h3>Python / ML Engineer</h3>
+                      <p>Core Python, ML Models, Data Processing, NLP</p>
+                    </div>
+                  </div>
+                  <div class="role-select-card" onclick="app.selectRole('fullstack', this)">
+                    <div class="role-icon">💻</div>
+                    <div class="role-info">
+                      <h3>Full-Stack Engineer</h3>
+                      <p>React/HTML/CSS, Node.js, SQL, REST APIs</p>
+                    </div>
+                  </div>
+                  <div class="role-select-card" onclick="app.selectRole('data-analyst', this)">
+                    <div class="role-icon">📊</div>
+                    <div class="role-info">
+                      <h3>Data Analyst</h3>
+                      <p>SQL databases, Pandas, Statistics, Reporting</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Interview Level</label>
+                <div class="pill-selector">
+                  <div class="pill-option primary">
+                    <input type="radio" name="level" id="level-junior" value="Junior" checked>
+                    <label for="level-junior">Junior</label>
+                  </div>
+                  <div class="pill-option primary">
+                    <input type="radio" name="level" id="level-mid" value="Mid-Level">
+                    <label for="level-mid">Mid-Level</label>
+                  </div>
+                  <div class="pill-option primary">
+                    <input type="radio" name="level" id="level-senior" value="Senior">
+                    <label for="level-senior">Senior</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Company Type Simulator</label>
+                <div class="pill-selector">
+                  <div class="pill-option">
+                    <input type="radio" name="company" id="comp-faang" value="Big Tech / FAANG" checked>
+                    <label for="comp-faang">Big Tech (Algorithmic)</label>
+                  </div>
+                  <div class="pill-option">
+                    <input type="radio" name="company" id="comp-startup" value="Early Stage Startup">
+                    <label for="comp-startup">Startup (Product & Speed)</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="toggle-group">
+                <div class="toggle-details">
+                  <span>Include Live Coding Round</span>
+                  <p>Enables the interactive browser IDE panel alongside behavioral chat.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="include-coding" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <button class="btn btn-primary" onclick="app.startInterview()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Begin Mock Interview
+              </button>
+            </form>
+          </div>
+
+          <!-- History & Stats Sidebar -->
+          <div class="sidebar-stats">
+            <div class="glass-card">
+              <h2 style="font-family: var(--font-heading); font-size: 18px; margin-bottom: 15px;">Your Progress</h2>
+              <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="stat-item">
+                  <div class="stat-icon indigo">🎯</div>
+                  <div class="stat-info">
+                    <span class="stat-num" id="stat-sessions">0</span>
+                    <span class="stat-label">Sessions Completed</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-icon purple">🔥</div>
+                  <div class="stat-info">
+                    <span class="stat-num" id="stat-avg-score">-%</span>
+                    <span class="stat-label">Average Score</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-icon emerald">⚡</div>
+                  <div class="stat-info">
+                    <span class="stat-num" id="stat-highest">-%</span>
+                    <span class="stat-label">Highest Score</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="glass-card" style="flex-grow: 1;">
+              <h2 style="font-family: var(--font-heading); font-size: 18px; margin-bottom: 12px;">Recent Mock Runs</h2>
+              <div id="recent-sessions-list" style="display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--text-secondary);">
+                <!-- Dynamically generated list -->
+                <p style="text-align: center; padding: 20px 0; color: var(--text-tertiary);">No sessions completed yet. Practice makes perfect!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           Screen 2: Resume Scanner & Customizer
+           ========================================== -->
+      <section id="screen-resume" class="screen-section">
+        <div class="glass-card resume-layout">
+          <h2 style="font-family: var(--font-heading); font-size: 20px;">Resume Customizer</h2>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-top: -15px;">
+            Let our AI scan your projects and skills to customize your mock interview questions. Paste your resume text below.
+          </p>
+          
+          <div class="resume-dropzone" id="resume-dropzone" onclick="document.getElementById('file-loader').click()">
+            <input type="file" id="file-loader" style="display: none;" accept=".txt,.pdf" onchange="app.handleResumeFileUpload(event)">
+            <div class="dropzone-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <div class="dropzone-text">
+              <h3>Upload Resume (.pdf or .txt)</h3>
+              <p>Drag and drop your file here, or click to browse</p>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Or Paste Resume Content Directly</label>
+            <textarea class="textarea-box" id="resume-text-input" placeholder="Paste resume, project highlights, or experience details here..." oninput="app.analyzeResumeDebounced()"></textarea>
+          </div>
+          
+          <div id="resume-analysis-output" style="display: none;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px;">Detected Profile Skills</h3>
+            <div class="skills-tags-container" id="resume-skills-tags">
+              <!-- Dynamically populated skill tags -->
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 15px; margin-top: 10px;">
+            <button class="btn btn-primary" onclick="app.startResumeTailoredInterview()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Start Resume-Tailored Session
+            </button>
+            <button class="btn btn-secondary" onclick="document.getElementById('resume-text-input').value=''; document.getElementById('resume-analysis-output').style.display='none';">Clear</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           Screen 3: Interview Screen (Interactive Playground)
+           ========================================== -->
+      <section id="screen-interview" class="screen-section">
+        <div class="interview-grid" id="interview-workspace-grid">
+          <!-- Chat Terminal -->
+          <div class="chat-pane">
+            <div class="chat-header">
+              <div class="interviewer-info">
+                <div class="interviewer-avatar">🤖</div>
+                <div>
+                  <div class="interviewer-name" id="interviewer-name-label">IntervAI Recruiter</div>
+                  <div class="interviewer-role" id="interviewer-level-label">AI Technical Interviewer</div>
+                </div>
+              </div>
+              <div class="timer-box" id="interview-timer">
+                00:00
+              </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages-container">
+              <!-- Chat bubbles will go here -->
+            </div>
+            
+            <div class="chat-input-area">
+              <div class="chat-input-wrapper">
+                <textarea class="chat-input-box" id="chat-input-box" placeholder="Type your response here..." onkeydown="app.handleChatKeyDown(event)"></textarea>
+                <div class="input-actions">
+                  <button class="btn-circle" id="mic-toggle-btn" onclick="app.toggleSpeechRecognition()" title="Simulate Voice Mode (Speech-to-Text)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="23"></line>
+                      <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                  </button>
+                  <button class="btn-circle" id="voice-tts-btn" onclick="app.toggleVoiceTTS()" title="Text-to-Speech Toggle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                  </button>
+                  <button class="btn-circle primary-btn" onclick="app.submitUserResponse()" title="Send Response">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Code Editor Playground -->
+          <div class="code-editor-pane" id="ide-pane">
+            <div class="editor-header">
+              <div class="editor-tabs">
+                <button class="editor-tab active" id="editor-tab-primary">
+                  <span class="editor-tab-icon python" id="tab-lang-icon">🐍</span>
+                  <span id="tab-filename-label">main.py</span>
+                </button>
+              </div>
+              <div class="editor-actions">
+                <button class="editor-btn hint" onclick="app.requestHint()">
+                  💡 Get Hint
+                </button>
+                <button class="editor-btn run" onclick="app.runCode()">
+                  ▶ Run Code
+                </button>
+              </div>
+            </div>
+            
+            <div class="editor-workspace">
+              <div class="line-numbers" id="editor-line-numbers">
+                1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18
+              </div>
+              <textarea class="code-textarea" id="editor-textarea" spellcheck="false" placeholder="// Write your code solution here..."></textarea>
+              
+              <!-- Hint Floating Popup -->
+              <div class="hint-popup" id="hint-popup-box">
+                <div class="hint-popup-header">
+                  <span>💡 INTERVIEWER HINT</span>
+                  <button class="modal-close-btn" onclick="document.getElementById('hint-popup-box').style.display='none'">×</button>
+                </div>
+                <div class="hint-popup-body" id="hint-popup-body">
+                  Think about optimizing your loops. Can we do this in O(N) time?
+                </div>
+              </div>
+            </div>
+            
+            <div class="editor-console">
+              <div class="console-header">
+                <span>Output Console</span>
+                <span id="console-status-pill">Idle</span>
+              </div>
+              <div class="console-output" id="console-output-box">> Console ready. Write code above and hit 'Run Code'.</div>
+            </div>
+            
+            <div class="editor-submit-bar">
+              <div class="submit-stats">
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 11.08 12 17 2 11.08"></polyline><polyline points="22 4 12 10 2 4"></polyline><polyline points="2 17 12 23 22 17"></polyline></svg>
+                  Difficulty: <strong id="ide-difficulty-label">Mid</strong>
+                </span>
+                <span>
+                  ⏱ Time elapsed: <strong id="ide-timer-label">00:00</strong>
+                </span>
+              </div>
+              <button class="btn btn-emerald" onclick="app.finishInterviewPrompt()">
+                🏁 Finish & Evaluate
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           Screen 4: Performance Evaluation Report
+           ========================================== -->
+      <section id="screen-report" class="screen-section">
+        <div class="report-grid">
+          <!-- Left Panel: Score Card -->
+          <div class="scorecard-card">
+            <!-- Overall Score Circle -->
+            <div class="glass-card" style="text-align: center;">
+              <h2 style="font-family: var(--font-heading); font-size: 18px; margin-bottom: 12px;">Mock Results</h2>
+              <div class="overall-score-circle">
+                <svg class="score-svg" viewBox="0 0 160 160">
+                  <defs>
+                    <linearGradient id="score-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="var(--color-indigo)" />
+                      <stop offset="100%" stop-color="var(--color-purple)" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="score-bg-circle" cx="80" cy="80" r="70"></circle>
+                  <circle class="score-progress-circle" id="report-overall-circle" cx="80" cy="80" r="70"></circle>
+                </svg>
+                <div class="score-text-center">
+                  <span class="score-num" id="report-overall-score">0%</span>
+                  <span class="score-label">Overall Match</span>
+                </div>
+              </div>
+              
+              <div class="verdict-box" style="margin-top: 15px;">
+                <div class="verdict-title" id="report-verdict-title">Ready for Hiring</div>
+                <div class="verdict-desc" id="report-verdict-desc">You showed solid logic and coding conventions. Ready to apply to mid-level jobs.</div>
+              </div>
+            </div>
+            
+            <!-- Category breakdown bars -->
+            <div class="glass-card">
+              <h3 style="font-family: var(--font-heading); font-size: 16px; margin-bottom: 16px;">Core Competencies</h3>
+              <div class="category-scores">
+                <div class="category-bar-item">
+                  <div class="category-bar-label">
+                    <span>Code Efficiency & Logic</span>
+                    <span id="score-cat-logic">0/10</span>
+                  </div>
+                  <div class="category-bar-bg">
+                    <div class="category-bar-fill indigo" id="bar-cat-logic" style="width: 0%;"></div>
+                  </div>
+                </div>
+                
+                <div class="category-bar-item">
+                  <div class="category-bar-label">
+                    <span>Problem Solving Approach</span>
+                    <span id="score-cat-problem">0/10</span>
+                  </div>
+                  <div class="category-bar-bg">
+                    <div class="category-bar-fill purple" id="bar-cat-problem" style="width: 0%;"></div>
+                  </div>
+                </div>
+                
+                <div class="category-bar-item">
+                  <div class="category-bar-label">
+                    <span>System Architecture</span>
+                    <span id="score-cat-system">0/10</span>
+                  </div>
+                  <div class="category-bar-bg">
+                    <div class="category-bar-fill emerald" id="bar-cat-system" style="width: 0%;"></div>
+                  </div>
+                </div>
+                
+                <div class="category-bar-item">
+                  <div class="category-bar-label">
+                    <span>Communication & Behaviors</span>
+                    <span id="score-cat-comm">0/10</span>
+                  </div>
+                  <div class="category-bar-bg">
+                    <div class="category-bar-fill amber" id="bar-cat-comm" style="width: 0%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button class="btn btn-primary" onclick="app.switchScreen('dashboard')">
+                🔄 Start Another Session
+              </button>
+              <button class="btn btn-secondary" onclick="window.print()">
+                📥 Export Report to PDF
+              </button>
+            </div>
+          </div>
+          
+          <!-- Right Panel: Step by step analysis -->
+          <div class="report-details-pane glass-card">
+            <h2 style="font-family: var(--font-heading); font-size: 20px;">Question-by-Question Evaluation</h2>
+            <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: -15px;">
+              Expand each question card to view strengths, suggestions, and recommended answers.
+            </p>
+            
+            <div class="eval-questions-list" id="eval-questions-list-container">
+              <!-- Dynamically generated expanded reports -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           Screen 5: Settings Screen
+           ========================================== -->
+      <section id="screen-settings" class="screen-section">
+        <div class="glass-card settings-layout">
+          <h2 class="setting-card-title">IntervAI Settings</h2>
+          
+          <div class="form-group">
+            <label>API Key Configuration</label>
+            <p class="desc">Enter your Google Gemini API key. This will run active, real-time mock interviews customized to your coding solutions. Key is stored locally in your browser.</p>
+            <div class="api-key-input-wrapper">
+              <input type="password" class="api-key-input" id="settings-gemini-key" placeholder="Enter Gemini API Key (AIzaSy...)">
+              <button class="btn btn-primary" onclick="app.saveApiKey()">Save Key</button>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+              <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="app.clearApiKey()">Delete Key</button>
+              <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="app.testApiKeyConnection()">Test Connection</button>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Select AI Model</label>
+            <div class="pill-selector">
+              <div class="pill-option">
+                <input type="radio" name="model" id="model-flash" value="gemini-1.5-flash" checked>
+                <label for="model-flash">Gemini 1.5 Flash (Fast, responsive)</label>
+              </div>
+              <div class="pill-option">
+                <input type="radio" name="model" id="model-pro" value="gemini-1.5-pro">
+                <label for="model-pro">Gemini 1.5 Pro (Deep reasoning)</label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-notice">
+            <strong>💡 How to get a Gemini API Key:</strong><br>
+            1. Visit the Google AI Studio: <a href="https://aistudio.google.com/" target="_blank" style="color: var(--color-indigo); text-decoration: underline;">aistudio.google.com</a>.<br>
+            2. Sign in with your Google account.<br>
+            3. Click on "Get API Key", then create a key in a new or existing project.<br>
+            4. Copy and paste it here! (It is completely free to create for personal developer testing).
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Overlay (e.g. Loading screens or initial choice) -->
+  <div class="modal-overlay" id="loading-modal">
+    <div class="glass-card modal-box">
+      <div class="modal-body" style="text-align: center; padding: 20px 0;">
+        <div class="spinner" style="width: 40px; height: 40px; border-width: 4px; margin-bottom: 20px;"></div>
+        <h3 style="font-family: var(--font-heading); font-size: 18px; margin-bottom: 8px;" id="loading-modal-title">Generating Interview...</h3>
+        <p style="font-size: 13px; color: var(--text-secondary);" id="loading-modal-desc">Loading role templates and setting up the code environment.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="ai_service.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
