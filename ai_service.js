@@ -334,7 +334,7 @@ FROM customer_spend;`
 
     // Format messages for Gemini API
     const contents = messages.map(msg => ({
-      role: msg.role === 'interviewer' || msg.role === 'model' ? 'model' : 'user', // Map interviewer/coach to model, rest to user
+      role: msg.role === 'user' ? 'user' : 'model', // Map user role to user, everything else (interviewer/coach/model) to model
       parts: [{ text: msg.content + (msg.code ? `\n\n[Candidate's Submitted Code]:\n${msg.code}` : "") }]
     }));
 
