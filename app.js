@@ -73,7 +73,7 @@ const app = {
         const match = text.match(/GEMINI_API_KEY\s*=\s*(.*)/);
         if (match && match[1]) {
           const key = match[1].trim().replace(/['"]/g, '');
-          if (key && key.startsWith('AIzaSy')) {
+          if (key && (key.startsWith('AIzaSy') || key.startsWith('AQ.'))) {
             AIService.saveApiKey(key);
             console.log("Gemini API Key successfully loaded from local .env config.");
           }
@@ -183,7 +183,7 @@ const app = {
   async testApiKeyConnection() {
     const isLive = AIService.isLive();
     if (!isLive) {
-      alert("No valid API Key detected. Please save a key starting with 'AIzaSy'.");
+      alert("No valid API Key detected. Please save a key starting with 'AIzaSy' or 'AQ.'.");
       return;
     }
     

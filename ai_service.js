@@ -318,7 +318,7 @@ FROM customer_spend;`
   // Check if API key is configured
   isLive() {
     const key = this.getApiKey();
-    return (key && key.trim().startsWith('AIzaSy'));
+    return (key && (key.trim().startsWith('AIzaSy') || key.trim().startsWith('AQ.')));
   },
 
   // Send request to Gemini API
