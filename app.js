@@ -1249,6 +1249,7 @@ const app = {
     } catch (e) {
       console.error("Coach message failed:", e);
       this.hideCoachTypingIndicator();
+      this.state.coachConversationHistory.pop(); // Remove failed user message from history to prevent sequence corruption
       const errorMsg = "Sorry, I had trouble generating a response. Please check your settings or try again.";
       this.addCoachMessage('coach', errorMsg);
     }
@@ -1284,6 +1285,7 @@ const app = {
     } catch(e) {
       console.error("Coach topic failed:", e);
       this.hideCoachTypingIndicator();
+      this.state.coachConversationHistory.pop(); // Remove failed user message from history to prevent sequence corruption
       this.addCoachMessage('coach', "Sorry, I encountered an error connecting to the coaching server.");
     }
   },
