@@ -46,6 +46,17 @@
             <span>Resume Scan</span>
           </button>
         </li>
+        <li class="menu-item" id="nav-coach">
+          <button onclick="app.switchScreen('coach')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>AI Career Coach</span>
+          </button>
+        </li>
         <li class="menu-item" id="nav-settings">
           <button onclick="app.switchScreen('settings')">
             <svg viewBox="0 0 24 24">
@@ -249,9 +260,33 @@
           </div>
           
           <div id="resume-analysis-output" style="display: none;">
-            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px;">Detected Profile Skills</h3>
-            <div class="skills-tags-container" id="resume-skills-tags">
-              <!-- Dynamically populated skill tags -->
+            <div class="resume-analysis-grid">
+              <div class="analysis-left">
+                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px;">Detected Profile Skills</h3>
+                <div class="skills-tags-container" id="resume-skills-tags">
+                  <!-- Dynamically populated skill tags -->
+                </div>
+                
+                <div class="resume-profile-card" style="margin-top: 15px;">
+                  <h4 style="font-size: 13px; font-weight: 700; color: var(--color-indigo);">Profile Summary</h4>
+                  <p id="resume-analysis-summary" style="font-size: 13px; color: var(--text-secondary); margin-top: 5px;"></p>
+                </div>
+                <div class="resume-profile-card" style="margin-top: 15px;">
+                  <h4 style="font-size: 13px; font-weight: 700; color: var(--color-emerald);">Suggested Career Role</h4>
+                  <p id="resume-analysis-role" style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 5px;"></p>
+                </div>
+              </div>
+              
+              <div class="analysis-right">
+                <div class="resume-eval-box pro">
+                  <h4>💡 Key Strengths</h4>
+                  <ul id="resume-analysis-strengths" style="margin-left: 15px; font-size: 13px; color: var(--text-secondary); margin-top: 5px;"></ul>
+                </div>
+                <div class="resume-eval-box con" style="margin-top: 15px;">
+                  <h4>⚠️ Suggested Enhancements</h4>
+                  <ul id="resume-analysis-improvements" style="margin-left: 15px; font-size: 13px; color: var(--text-secondary); margin-top: 5px;"></ul>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -485,6 +520,83 @@
             
             <div class="eval-questions-list" id="eval-questions-list-container">
               <!-- Dynamically generated expanded reports -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           Screen 6: AI Career Coach Screen
+           ========================================== -->
+      <section id="screen-coach" class="screen-section">
+        <div class="coach-grid">
+          <!-- Left Panel: Coach Guides & Topics -->
+          <div class="coach-topics-pane">
+            <div class="glass-card" style="height: 100%; display: flex; flex-direction: column; gap: 15px;">
+              <h2 style="font-family: var(--font-heading); font-size: 18px;">Coaching Guides</h2>
+              <p style="font-size: 13px; color: var(--text-secondary); margin-top: -10px;">Select a guide topic to instantly query our coach resources.</p>
+              
+              <div class="coach-topic-cards">
+                <div class="coach-topic-card" onclick="app.askCoachTopic('Resume Optimization')">
+                  <div class="topic-icon">📄</div>
+                  <div class="topic-info">
+                    <h3>Resume Optimization</h3>
+                    <p>Learn how to beat ATS and design professional CVs.</p>
+                  </div>
+                </div>
+                <div class="coach-topic-card" onclick="app.askCoachTopic('Salary Negotiation')">
+                  <div class="topic-icon">💰</div>
+                  <div class="topic-info">
+                    <h3>Salary Negotiation</h3>
+                    <p>Tactics and scripts for negotiating compensation.</p>
+                  </div>
+                </div>
+                <div class="coach-topic-card" onclick="app.askCoachTopic('Career Roadmaps')">
+                  <div class="topic-icon">🗺️</div>
+                  <div class="topic-info">
+                    <h3>Career Roadmaps</h3>
+                    <p>Explore target frameworks and skills checklist.</p>
+                  </div>
+                </div>
+                <div class="coach-topic-card" onclick="app.askCoachTopic('STAR Method')">
+                  <div class="topic-icon">🌟</div>
+                  <div class="topic-info">
+                    <h3>Behavioral Prep (STAR)</h3>
+                    <p>Structuring behavioral interview answers.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Panel: Coach Chat Interface -->
+          <div class="chat-pane coach-chat-pane">
+            <div class="chat-header">
+              <div class="interviewer-info">
+                <div class="interviewer-avatar">🧑‍💼</div>
+                <div>
+                  <div class="interviewer-name">IntervAI Career Coach</div>
+                  <div class="interviewer-role">Career Guidance & Interview Advisor</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="chat-messages" id="coach-messages-container">
+              <!-- Career Coach chat bubbles -->
+            </div>
+            
+            <div class="chat-input-area">
+              <div class="chat-input-wrapper">
+                <textarea class="chat-input-box" id="coach-input-box" placeholder="Ask anything about your career path, interview advice, etc..." onkeydown="app.handleCoachChatKeyDown(event)"></textarea>
+                <div class="input-actions">
+                  <button class="btn-circle primary-btn" onclick="app.submitCoachMessage()" title="Send Message">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -19,6 +19,10 @@ const app = {
     conversationHistory: [], // { role: 'interviewer'|'user', content: '', code: '' }
     interviewTimerInterval: null,
     interviewSeconds: 0,
+
+    // AI Career Coach State
+    coachConversationHistory: [], // { role: 'coach'|'user', content: '' }
+    isCoachInitialized: false,
     
     // Voice Settings
     voiceTTSActive: false,
@@ -39,10 +43,14 @@ const app = {
   },
 
   // Initialize App
-  init() {
+  async init() {
     console.log("IntervAI initializing...");
     this.loadStats();
     this.updateStatsUI();
+    
+    // Load local environment key on startup
+    await this.loadEnvKey();
+    
     this.checkApiStatus();
     
     // Auto-select initial role UI
@@ -54,6 +62,26 @@ const app = {
     
     // Initialize Web Speech Recognition if available
     this.initSpeechRecognition();
+  },
+
+  // Load API key from local .env file dynamically if present
+  async loadEnvKey() {
+    try {
+      const response = await fetch('.env');
+      if (response.ok) {
+        const text = await response.text();
+        const match = text.match(/GEMINI_API_KEY\s*=\s*(.*)/);
+        if (match && match[1]) {
+          const key = match[1].trim().replace(/['"]/g, '');
+          if (key && key.startsWith('AIzaSy')) {
+            AIService.saveApiKey(key);
+            console.log("Gemini API Key successfully loaded from local .env config.");
+          }
+        }
+      }
+    } catch (e) {
+      console.log("Unable to load .env file dynamically:", e);
+    }
   },
 
   // Routing System
@@ -96,6 +124,11 @@ const app = {
       case 'settings':
         titleEl.textContent = 'API Settings';
         subtitleEl.textContent = 'Configure LLM model details and Google Gemini keys';
+        break;
+      case 'coach':
+        titleEl.textContent = 'AI Career Coach';
+        subtitleEl.textContent = 'Ask career questions, get roadmap advice, or resume reviews';
+        this.initCoach();
         break;
     }
   },
@@ -294,7 +327,7 @@ const app = {
     this.state.resumeTimeout = setTimeout(() => this.analyzeResume(), 500);
   },
 
-  analyzeResume() {
+  async analyzeResume() {
     const text = document.getElementById('resume-text-input').value;
     if (!text.trim()) {
       document.getElementById('resume-analysis-output').style.display = 'none';
@@ -302,7 +335,61 @@ const app = {
     }
     
     this.state.resumeText = text;
+    const isLive = AIService.isLive();
     
+    // Clear strengths and improvements lists
+    document.getElementById('resume-analysis-strengths').innerHTML = '';
+    document.getElementById('resume-analysis-improvements').innerHTML = '';
+    document.getElementById('resume-analysis-summary').textContent = 'Analyzing...';
+    document.getElementById('resume-analysis-role').textContent = 'Analyzing...';
+    
+    if (isLive) {
+      document.getElementById('resume-analysis-output').style.display = 'block';
+      try {
+        const analysis = await AIService.analyzeLiveResume(text);
+        
+        // Populate detected skills
+        this.state.parsedSkills = analysis.skills || [];
+        const tagsContainer = document.getElementById('resume-skills-tags');
+        tagsContainer.innerHTML = '';
+        this.state.parsedSkills.forEach(skill => {
+          const span = document.createElement('div');
+          span.className = 'skill-tag';
+          span.innerHTML = `${skill} <button onclick="app.removeParsedSkill('${skill}', this)">×</button>`;
+          tagsContainer.appendChild(span);
+        });
+        
+        // Populate profile summary and recommended role
+        document.getElementById('resume-analysis-summary').textContent = analysis.profileSummary || "";
+        document.getElementById('resume-analysis-role').textContent = analysis.suggestedRole || "";
+        
+        // Populate strengths
+        const strengthsList = document.getElementById('resume-analysis-strengths');
+        (analysis.strengths || []).forEach(str => {
+          const li = document.createElement('li');
+          li.textContent = str;
+          strengthsList.appendChild(li);
+        });
+        
+        // Populate improvements
+        const improvementsList = document.getElementById('resume-analysis-improvements');
+        (analysis.improvements || []).forEach(imp => {
+          const li = document.createElement('li');
+          li.textContent = imp;
+          improvementsList.appendChild(li);
+        });
+        
+      } catch (e) {
+        console.error("Live resume scan error:", e);
+        document.getElementById('resume-analysis-summary').textContent = "Failed to run live parsing. Using offline keyword scanner.";
+        this.runOfflineResumeScan(text);
+      }
+    } else {
+      this.runOfflineResumeScan(text);
+    }
+  },
+
+  runOfflineResumeScan(text) {
     // Mock parsing matching keyword lists
     const skillsList = [
       'Flutter', 'Dart', 'BLoC', 'Riverpod', 'Provider', 'SQLite', 'Firebase', 'State Management',
@@ -339,6 +426,15 @@ const app = {
       tagsContainer.innerHTML = '<p style="font-size:12px; color:var(--text-tertiary);">No specific framework matches detected. Type your key skills in details.</p>';
       document.getElementById('resume-analysis-output').style.display = 'block';
     }
+    
+    document.getElementById('resume-analysis-summary').textContent = "Extracted profile keywords using offline directory indexing.";
+    document.getElementById('resume-analysis-role').textContent = detected.includes('Flutter') ? "Flutter Developer" : (detected.includes('Python') ? "Python / ML Engineer" : "Full-Stack Engineer");
+    
+    const strengthsList = document.getElementById('resume-analysis-strengths');
+    strengthsList.innerHTML = '<li>Quantified profile highlights detected</li><li>Clean skills classification tags</li>';
+    
+    const improvementsList = document.getElementById('resume-analysis-improvements');
+    improvementsList.innerHTML = '<li>Add specific metrics to project achievements</li><li>Configure Gemini key to enable full layout reviews</li>';
   },
 
   removeParsedSkill(skill, element) {
@@ -630,11 +726,16 @@ const app = {
         const lowerCode = code.toLowerCase();
         let logs = "> python main.py\n";
         
-        if (lowerCode.includes("def euclidean_distance") && lowerCode.includes("np.sqrt") && lowerCode.includes("np.sum")) {
+        const hasEuclidean = lowerCode.includes("def euclidean_distance");
+        const isVectorized = lowerCode.includes("np.linalg.norm") || 
+                             (lowerCode.includes("np.sqrt") && lowerCode.includes("np.sum")) ||
+                             (lowerCode.includes("**0.5") && lowerCode.includes("np.sum"));
+                             
+        if (hasEuclidean && isVectorized) {
           logs += "5.0\n\nTEST_SUCCESS: NumPy vectorized calculations matched reference constraints.";
           consoleBox.classList.add('success');
           statusPill.textContent = 'Tests Passed';
-        } else if (lowerCode.includes("def euclidean_distance")) {
+        } else if (hasEuclidean) {
           logs += "5.0\n\nWARNING: Vectorized arrays not fully implemented. Python loop check failed.";
           statusPill.textContent = 'Warning';
         } else {
@@ -649,7 +750,10 @@ const app = {
         const lowerCode = code.toLowerCase();
         let logs = "> dart safe_list.dart\n";
         
-        if (lowerCode.includes("extension safelistextension") && lowerCode.includes("safeget") && lowerCode.includes("null")) {
+        const hasExtension = /extension\s+\w+\s+on\s+List/.test(lowerCode);
+        const hasSafeGet = lowerCode.includes("safeget") && lowerCode.includes("null");
+        
+        if (hasExtension && hasSafeGet) {
           logs += "20\nnull\n\nTEST_SUCCESS: safeGet bounds checks verified.";
           consoleBox.classList.add('success');
           statusPill.textContent = 'Tests Passed';
@@ -657,6 +761,29 @@ const app = {
           logs += "Compilation Error: list.safeGet is not defined for type List<int>";
           consoleBox.classList.add('error');
           statusPill.textContent = 'Failed';
+        }
+        consoleBox.textContent = logs;
+      }
+      else if (codingQ.language === 'sql') {
+        // SQL query simulation
+        const lowerCode = code.toLowerCase();
+        let logs = "> EXPLAIN ANALYZE SELECT ...\n";
+        
+        if ((lowerCode.includes("dense_rank") || lowerCode.includes("rank")) && lowerCode.includes("over")) {
+          logs += "+-------------+-------------+---------------+\n";
+          logs += "| customer_id | total_spent | customer_rank |\n";
+          logs += "+-------------+-------------+---------------+\n";
+          logs += "|         105 |      450.00 |             1 |\n";
+          logs += "|         102 |      320.50 |             2 |\n";
+          logs += "|         101 |      150.00 |             3 |\n";
+          logs += "+-------------+-------------+---------------+\n";
+          logs += "\nTEST_SUCCESS: SQL window function ranking query executed successfully with 3 rows.";
+          consoleBox.classList.add('success');
+          statusPill.textContent = 'Query Success';
+        } else {
+          logs += "SQL Error: Missing window function logic (DENSE_RANK() or RANK() OVER ...) in the query selection.";
+          consoleBox.classList.add('error');
+          statusPill.textContent = 'Query Failed';
         }
         consoleBox.textContent = logs;
       }
@@ -922,7 +1049,7 @@ const app = {
     
     bubble.innerHTML = `
       <div class="msg-icon">${icon}</div>
-      <div class="msg-content">${this.escapeHTML(text)}</div>
+      <div class="msg-content">${this.parseMarkdown(text)}</div>
     `;
     
     container.appendChild(bubble);
@@ -1022,6 +1149,170 @@ const app = {
         container.appendChild(item);
       });
     }
+  },
+
+  // Markdown Parser Utility
+  parseMarkdown(text) {
+    let escaped = this.escapeHTML(text);
+    
+    // Replace code blocks: ```lang ... ```
+    escaped = escaped.replace(/```(?:[a-zA-Z0-9]+)?\n([\s\S]*?)```/g, '<pre class="chat-code-block"><code>$1</code></pre>');
+    
+    // Replace inline code: `code`
+    escaped = escaped.replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>');
+    
+    // Replace bold: **text**
+    escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Replace italic: *text*
+    escaped = escaped.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    
+    // Replace bullet points
+    escaped = escaped.replace(/(?:^|<br>)[-*]\s+([^\n<]+)/g, (match, p1) => {
+      return '<div class="chat-bullet-item">• ' + p1 + '</div>';
+    });
+    
+    // Replace newlines with <br>
+    escaped = escaped.split('\n').join('<br>');
+    
+    // Fix pre tags which got <br> inside them
+    escaped = escaped.replace(/<pre class="chat-code-block"><code>([\s\S]*?)<\/code><\/pre>/g, (match, p1) => {
+      return '<pre class="chat-code-block"><code>' + p1.split('<br>').join('\n') + '</code></pre>';
+    });
+
+    return escaped;
+  },
+
+  // Initialize Career Coach Chat
+  initCoach() {
+    if (this.state.isCoachInitialized) return;
+    
+    this.state.coachConversationHistory = [];
+    document.getElementById('coach-messages-container').innerHTML = '';
+    
+    // Welcome message
+    const welcome = "Hello! I am your IntervAI Career Coach. I am here to help you optimize your resume, negotiate your salary, plan your learning roadmap, and practice behavioral strategies. Select a topic guide on the left or write your custom career questions below!";
+    this.addCoachMessage('coach', welcome);
+    this.state.coachConversationHistory.push({ role: 'coach', content: welcome });
+    
+    this.state.isCoachInitialized = true;
+  },
+
+  // Add message to Coach UI
+  addCoachMessage(role, text) {
+    const container = document.getElementById('coach-messages-container');
+    if (!container) return;
+    
+    const bubble = document.createElement('div');
+    bubble.className = `message-bubble ${role === 'coach' ? 'interviewer' : 'user'}`;
+    
+    const icon = role === 'coach' ? '🧑‍💼' : '👤';
+    
+    bubble.innerHTML = `
+      <div class="msg-icon">${icon}</div>
+      <div class="msg-content">${this.parseMarkdown(text)}</div>
+    `;
+    
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+  },
+
+  // Submit custom coach query
+  async submitCoachMessage() {
+    const inputBox = document.getElementById('coach-input-box');
+    const content = inputBox.value.trim();
+    if (!content) return;
+    
+    // Append user message
+    this.addCoachMessage('user', content);
+    inputBox.value = '';
+    
+    this.state.coachConversationHistory.push({ role: 'user', content: content });
+    
+    this.showCoachTypingIndicator();
+    
+    const isLive = AIService.isLive();
+    try {
+      let reply = "";
+      if (isLive) {
+        // Send history to Gemini
+        reply = await AIService.callCoachGemini(this.state.coachConversationHistory);
+      } else {
+        // Run offline keyword parsing matcher
+        reply = AIService.getOfflineCoachResponse(content);
+      }
+      
+      this.hideCoachTypingIndicator();
+      this.addCoachMessage('coach', reply);
+      this.state.coachConversationHistory.push({ role: 'coach', content: reply });
+      
+    } catch (e) {
+      console.error("Coach message failed:", e);
+      this.hideCoachTypingIndicator();
+      const errorMsg = "Sorry, I had trouble generating a response. Please check your settings or try again.";
+      this.addCoachMessage('coach', errorMsg);
+    }
+  },
+
+  handleCoachChatKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      this.submitCoachMessage();
+    }
+  },
+
+  // Handle clicking quick coach guides
+  async askCoachTopic(topic) {
+    this.addCoachMessage('user', `Help me with: ${topic}`);
+    this.state.coachConversationHistory.push({ role: 'user', content: `Provide detailed tips on: ${topic}` });
+    
+    this.showCoachTypingIndicator();
+    
+    const isLive = AIService.isLive();
+    try {
+      let reply = "";
+      if (isLive) {
+        reply = await AIService.callCoachGemini(this.state.coachConversationHistory);
+      } else {
+        reply = AIService.getOfflineCoachResponse(topic);
+      }
+      
+      this.hideCoachTypingIndicator();
+      this.addCoachMessage('coach', reply);
+      this.state.coachConversationHistory.push({ role: 'coach', content: reply });
+      
+    } catch(e) {
+      console.error("Coach topic failed:", e);
+      this.hideCoachTypingIndicator();
+      this.addCoachMessage('coach', "Sorry, I encountered an error connecting to the coaching server.");
+    }
+  },
+
+  showCoachTypingIndicator() {
+    const container = document.getElementById('coach-messages-container');
+    if (!container) return;
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble interviewer';
+    bubble.id = 'coach-typing-indicator';
+    
+    bubble.innerHTML = `
+      <div class="msg-icon">🧑‍💼</div>
+      <div class="msg-content">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    `;
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+  },
+
+  hideCoachTypingIndicator() {
+    const el = document.getElementById('coach-typing-indicator');
+    if (el) el.remove();
   }
 };
 

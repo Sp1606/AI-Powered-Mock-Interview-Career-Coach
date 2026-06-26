@@ -334,8 +334,8 @@ FROM customer_spend;`
 
     // Format messages for Gemini API
     const contents = messages.map(msg => ({
-      role: msg.role === 'interviewer' || msg.role === 'system' ? 'user' : 'user', // Gemini accepts user/model. System is special.
-      parts: [{ text: msg.content }]
+      role: msg.role === 'interviewer' || msg.role === 'model' ? 'model' : 'user', // Map interviewer/coach to model, rest to user
+      parts: [{ text: msg.content + (msg.code ? `\n\n[Candidate's Submitted Code]:\n${msg.code}` : "") }]
     }));
 
     // In Gemini, we can provide system instructions at the top level
@@ -444,5 +444,100 @@ Evaluate the interview and output the JSON report. Ensure the 'questions' array 
       console.error("Failed to generate live evaluation, falling back to helper generator:", error);
       throw error;
     }
+  },
+
+  // Live Resume Scanner via Gemini API
+  async analyzeLiveResume(resumeText) {
+    const systemInstruction = `You are an expert recruiter scanning a technical resume.
+Analyze the resume and return a strict JSON report. Do NOT wrap it in any formatting besides JSON.
+Format:
+{
+  "skills": ["Skill1", "Skill2", ...], // Max 12 key technical skills
+  "profileSummary": "2-sentence professional profile summary.",
+  "suggestedRole": "Flutter Developer" | "Python / ML Engineer" | "Full-Stack Engineer" | "Data Analyst",
+  "strengths": ["Strength 1", "Strength 2", "Strength 3"],
+  "improvements": ["Improvement 1", "Improvement 2"]
+}`;
+
+    const prompt = `Analyze this resume and provide the structured evaluation:\n\n${resumeText}`;
+
+    try {
+      const responseText = await this.callGemini(systemInstruction, [{ role: 'user', content: prompt }], true);
+      let cleanText = responseText.trim();
+      if (cleanText.startsWith("```")) {
+        cleanText = cleanText.replace(/^```(json)?/, "").replace(/```$/, "").trim();
+      }
+      return JSON.parse(cleanText);
+    } catch (e) {
+      console.error("Live resume scan failed:", e);
+      throw e;
+    }
+  },
+
+  // Send request to Gemini API for Career Coaching
+  async callCoachGemini(messages) {
+    const systemInstruction = `You are IntervAI Coach, an elite career mentor and executive technology recruiter.
+You help candidates optimize their resumes, negotiate salaries, build career roadmaps, and prepare for interviews.
+Your style is encouraging, strategic, and highly professional.
+Provide practical, concrete advice with clear bullet points. Keep your responses structured and easy to read.`;
+    
+    try {
+      const responseText = await this.callGemini(systemInstruction, messages, false);
+      return responseText;
+    } catch (e) {
+      console.error("Coach live chat failed:", e);
+      throw e;
+    }
+  },
+
+  // Smart Offline Career Coach responders
+  getOfflineCoachResponse(userMessage) {
+    const text = userMessage.toLowerCase();
+    
+    if (text.includes('resume') || text.includes('cv') || text.includes('profile')) {
+      return `### 📄 Resume Optimization Tips
+To optimize your resume for applicant tracking systems (ATS) and recruiters, follow these guidelines:
+1. **Use clear, quantified results**: Instead of writing "Developed Flutter features", write "Developed 5 core features in Flutter, reducing load times by 24% and increasing active users by 15%".
+2. **Include target keywords**: Tailor your resume to match the job description's keywords (e.g. state management, PCA, window functions, caching).
+3. **Keep formatting simple**: Avoid complex multi-column grid layouts that throw off automated ATS scanners. Use standard PDFs or simple text hierarchies.
+
+*Tip: Save a Gemini API Key in Settings to get a live, personalized review of your uploaded resume.*`;
+    }
+    
+    if (text.includes('salary') || text.includes('negotiat') || text.includes('offer') || text.includes('compensation')) {
+      return `### 💰 Salary Negotiation Strategies
+Negotiation can significantly boost your total compensation. Here are key tactics:
+1. **Never give the first number**: If asked about salary expectations, say: "I'd prefer to learn more about the role and deliverables before discussing numbers. What range do you have budgeted for this position?"
+2. **Base your request on market data**: Use levels.fyi, Glassdoor, and regional data to support your number.
+3. **Negotiate total compensation**: Remember that stock options, signing bonuses, health benefits, and PTO are negotiable, not just your base salary.
+4. **Be polite but firm**: "I am extremely excited about this opportunity. Based on my experience with the stack, I would be comfortable signing if we can reach $X."`;
+    }
+
+    if (text.includes('roadmap') || text.includes('learn') || text.includes('path') || text.includes('career') || text.includes('skill')) {
+      return `### 🗺️ Career Roadmap Recommendations
+Here are the general progression steps for tech roles:
+1. **Junior**: Focus on execution speed, clean syntax, understanding your framework's lifecycles, and writing tests.
+2. **Mid-Level**: Master system architecture, state/data caching, schema design trade-offs, and profiling execution latency.
+3. **Senior**: Lead architectural decisions, mentor junior devs, optimize large-scale distributed bottlenecks, and design for modular extensibility.
+
+*What specific role are you pursuing? Let me know so I can suggest specific skill trees.*`;
+    }
+    
+    if (text.includes('star') || text.includes('behavioral') || text.includes('interview')) {
+      return `### 🌟 The STAR Method for Behavioral Questions
+When asked behavioral questions (e.g. "Tell me about a conflict"), use the STAR structure:
+1. **Situation**: Set the scene. (1-2 sentences)
+2. **Task**: What was your responsibility? (1-2 sentences)
+3. **Action**: What did you do? Focus on your contributions. (3-4 sentences)
+4. **Result**: What was the outcome? Use numbers if possible! (e.g. "We launched on time with 0 bugs"). (1-2 sentences)`;
+    }
+
+    return `Hello! I am your AI Career Coach. I can help you with:
+- **Resume Optimization**: How to design and structure your profile.
+- **Salary Negotiation**: Strategies to negotiate compensation.
+- **Career Roadmaps**: What skillsets to focus on next.
+- **Interview Preparation**: Techniques like the STAR method.
+
+*Please select one of the quick guide topics on the left, or type your question. Save your Gemini key in settings to enable personalized, live career coaching chat!*`;
   }
 };

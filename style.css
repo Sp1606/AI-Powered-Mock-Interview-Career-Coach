@@ -1667,3 +1667,152 @@ input:checked + .slider:before {
     padding: 20px;
   }
 }
+
+/* ==========================================================================
+   IntervAI: AI Career Coach & Chat Markdown Enhancements
+   ========================================================================== */
+.coach-grid {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 20px;
+  height: calc(100vh - 150px);
+  animation: fadeIn 0.4s ease-out;
+}
+
+.coach-topics-pane {
+  height: 100%;
+}
+
+.coach-topic-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.coach-topic-card {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 14px;
+  display: flex;
+  gap: 14px;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+}
+
+.coach-topic-card:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-indigo);
+  transform: translateY(-2px);
+}
+
+.topic-icon {
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.topic-info h3 {
+  font-family: var(--font-heading);
+  font-size: 14.5px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.topic-info p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.coach-chat-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+/* Chat bubble styling for code blocks & markdown */
+.chat-code-block {
+  background-color: #060913;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: #38bdf8;
+}
+
+.chat-inline-code {
+  background-color: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  font-family: var(--font-code);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.chat-bullet-item {
+  margin-top: 6px;
+  margin-left: 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* Resume Scanner Live Grid styles */
+.resume-analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.resume-profile-card {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 14px;
+}
+
+.resume-eval-box {
+  border-radius: var(--border-radius-md);
+  padding: 16px;
+  border-left: 4px solid;
+  height: 100%;
+}
+
+.resume-eval-box.pro {
+  background: rgba(16, 185, 129, 0.02);
+  border-color: var(--color-emerald);
+}
+
+.resume-eval-box.pro h4 {
+  color: var(--color-emerald);
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.resume-eval-box.con {
+  background: rgba(245, 158, 11, 0.02);
+  border-color: var(--color-amber);
+}
+
+.resume-eval-box.con h4 {
+  color: var(--color-amber);
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
